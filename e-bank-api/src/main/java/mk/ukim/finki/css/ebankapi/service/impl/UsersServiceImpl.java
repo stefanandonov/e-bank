@@ -254,4 +254,14 @@ public class UsersServiceImpl implements UsersService {
 
 
     }
+
+    @Override
+    public List<User> getClients() {
+
+        return usersRepository.findAll()
+                .stream()
+                .filter(user -> user.role==Role.CLIENT)
+                .collect(Collectors.toList());
+
+    }
 }

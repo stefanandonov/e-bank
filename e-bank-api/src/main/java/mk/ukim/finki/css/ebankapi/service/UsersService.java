@@ -30,6 +30,6 @@ public interface UsersService {
 
     List<TransactionDTO> getTransactionsByUser (Long id) throws UserDoesNotExistException;
 
-
+    List<User> getClients();
 
 }
