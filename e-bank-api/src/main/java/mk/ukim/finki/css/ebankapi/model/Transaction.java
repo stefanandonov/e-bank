@@ -12,19 +12,19 @@ public class Transaction {
     public ZonedDateTime date;
 
     @ManyToOne
-    public Long employee;
+    public User employee;
 
     @ManyToOne
-    public Long sender;
+    public User sender;
 
     @ManyToOne
-    public Long reciever;
+    public User reciever;
 
     public Transaction () {
 
     }
 
-    public Transaction(Long sender, Long reciever, Long employee, Double amount, ZonedDateTime date) {
+    public Transaction(User sender, User reciever, User employee, Double amount, ZonedDateTime date) {
         this.sender=sender;
         this.reciever=reciever;
         this.employee=employee;
@@ -56,27 +56,27 @@ public class Transaction {
         this.date = date;
     }
 
-    public Long getEmployee() {
+    public User getEmployee() {
         return employee;
     }
 
-    public void setEmployee(Long employee) {
+    public void setEmployee(User employee) {
         this.employee = employee;
     }
 
-    public Long getSender() {
+    public User getSender() {
         return sender;
     }
 
-    public void setSender(Long sender) {
+    public void setSender(User sender) {
         this.sender = sender;
     }
 
-    public Long getReciever() {
+    public User getReciever() {
         return reciever;
     }
 
-    public void setReciever(Long reciever) {
+    public void setReciever(User reciever) {
         this.reciever = reciever;
     }
 }

@@ -16,11 +16,11 @@ public class Token {
     public Long tokenNumber;
 
     @ManyToOne
-    private Long user;
+    private User user;
 
     public Token () {}
 
-    public Token(Integer itemNumber, Long tokenNumber, Long user) {
+    public Token(Integer itemNumber, Long tokenNumber, User user) {
         this.itemNumber = itemNumber;
         this.tokenNumber = tokenNumber;
         this.user = user;
@@ -50,11 +50,11 @@ public class Token {
         this.tokenNumber = tokenNumber;
     }
 
-    public Long getUser() {
+    public User getUser() {
         return user;
     }
 
-    public void setUser(Long user) {
+    public void setUser(User user) {
         this.user = user;
     }
 }

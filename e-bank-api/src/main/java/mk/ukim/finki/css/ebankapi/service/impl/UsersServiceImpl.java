@@ -7,8 +7,6 @@ import mk.ukim.finki.css.ebankapi.model.exceptions.*;
 import mk.ukim.finki.css.ebankapi.repository.*;
 import mk.ukim.finki.css.ebankapi.service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,19 +23,19 @@ public class UsersServiceImpl implements UsersService {
     private TransactionsRepository transactionsRepository;
     private UsersRepository usersRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final Random random;
+    private final Random random = new Random();
+
+    private List<Long> loggedInUsers = new ArrayList<>();
 
     @Autowired
     public UsersServiceImpl(TokensRepository tokensRepository,
                             TransactionsRepository transactionsRepository,
                             UsersRepository usersRepository,
-                            BCryptPasswordEncoder bCryptPasswordEncoder,
-                            Random random) {
+                            BCryptPasswordEncoder bCryptPasswordEncoder) {
         this.tokensRepository = tokensRepository;
         this.transactionsRepository = transactionsRepository;
         this.usersRepository = usersRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
-        this.random=random;
     }
 
     private static boolean checkValidityForAccountNumber (String accountNumber) {
@@ -53,7 +51,7 @@ public class UsersServiceImpl implements UsersService {
     public void addClient(String username, String password, String name,
                           String telephone, Double startBalance,
                           String accountNumber, String address)
-            throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException {
+            throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException, UserDoesNotExistException {
         /*
         * Function that creates a client whenever a bank employee creates one. Recieves as arguments all the nessecary informations
         * for the client (username, password (plain text), name, telephone number, start balance, account number, home addres.
@@ -99,12 +97,17 @@ public class UsersServiceImpl implements UsersService {
 
         User client = usersRepository.findByUsername(username).orElseThrow(() -> new UserDoesNotExistException(username));
 
+        // Is user already logged in
+
+
         //boolean correctPassword = BCrypt.checkpw(password,client.getPassword());
         boolean correctPassword = bCryptPasswordEncoder.matches(password,client.getPassword());
 
 
         if (!correctPassword)
             throw new WrongPasswordException();
+
+        loggedInUsers.add(client.getId());
 
         return true;
     }
@@ -131,7 +134,7 @@ public class UsersServiceImpl implements UsersService {
                                         Long tokenNumber,
                                         String senderPassword)
             throws UserDoesNotExistException, NotSufficientPermissionExpcetion {
-
+        // TODO: 07.02.2019 Check if logged in
         if (senderId==null || recieverId == null || amount == null)
             throw new IllegalArgumentException();
 
@@ -156,7 +159,7 @@ public class UsersServiceImpl implements UsersService {
         reciever.setBalance(reciever.getBalance()+amount);
         usersRepository.save(sender);
         usersRepository.save(reciever);
-        return transactionsRepository.save(new Transaction(senderId,recieverId,null,amount,ZonedDateTime.now()));
+        return transactionsRepository.save(new Transaction(sender,reciever,null,amount,ZonedDateTime.now()));
     }
 
     private Long randLong(Long min, Long max) {
@@ -170,8 +173,9 @@ public class UsersServiceImpl implements UsersService {
 
     }
     @Override
-    public void createTokensPerClient(Long clientId) {
+    public void createTokensPerClient(Long clientId) throws UserDoesNotExistException {
 
+        User client = usersRepository.findById(clientId).orElseThrow(() -> new UserDoesNotExistException(""));
         List<Long> assignedTokens = new ArrayList<>();
         for (int i=1;i<=40;i++) {
             Long tokenNumber = generateRandomNumber();
@@ -185,7 +189,7 @@ public class UsersServiceImpl implements UsersService {
         }
 
         assignedTokens.stream()
-                .map(tokenNumber -> new Token(assignedTokens.indexOf(tokenNumber)+1,tokenNumber,clientId))
+                .map(tokenNumber -> new Token(assignedTokens.indexOf(tokenNumber)+1,tokenNumber,client))
                 .forEach(token -> tokensRepository.save(token));
 
     }
@@ -197,7 +201,7 @@ public class UsersServiceImpl implements UsersService {
 
     @Override
     public void twoFactorAuthentication(Long clientId, Integer itemNumber, Long tokenNumber, String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion {
-        List<Token> tokensPerClient = tokensRepository.findAllByUser(clientId);
+        List<Token> tokensPerClient = tokensRepository.findAllByUserId(clientId);
 
         if (tokensPerClient==null)
             throw new UserDoesNotExistException("");
@@ -220,14 +224,14 @@ public class UsersServiceImpl implements UsersService {
 
         if (t.sender.equals(clientId)) {
             senderOrReciever = usersRepository
-                    .findById(t.reciever)
+                    .findById(t.reciever.getId())
                     .orElse(null)
                     .name;
             amount *= -1;
         }
         else {
             senderOrReciever = usersRepository
-                    .findById(t.sender)
+                    .findById(t.sender.getId())
                     .orElse(null)
                     .name;
 
@@ -263,5 +267,12 @@ public class UsersServiceImpl implements UsersService {
                 .filter(user -> user.role==Role.CLIENT)
                 .collect(Collectors.toList());
 
+    }
+
+    private boolean isUserAlreadyLoggedIn(Long id) {
+        if(this.loggedInUsers.contains(id)) {
+            return true;
+        }
+        return false;
     }
 }

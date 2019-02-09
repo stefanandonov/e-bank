@@ -10,9 +10,9 @@ import java.util.Optional;
 @Repository
 public interface TokensRepository extends JpaRepository<Token , Long> {
 
-    Optional<Token> findByItemNumber() ;
+    Optional<Token> findByItemNumber(Integer number) ;
 
-    List<Token> findAllByUser(Long id);
+    List<Token> findAllByUserId(Long id);
 
 
 

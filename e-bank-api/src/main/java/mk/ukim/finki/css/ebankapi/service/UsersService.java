@@ -10,7 +10,7 @@ import java.util.*;
 public interface UsersService {
 
     void addClient (String username, String password, String name,
-                    String telephone,  Double startBalance, String accountNumber, String addres) throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException;
+                    String telephone,  Double startBalance, String accountNumber, String addres) throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException, UserDoesNotExistException;
 
 
     boolean canLogin (String username, String password) throws UserDoesNotExistException, WrongPasswordException;
@@ -22,7 +22,7 @@ public interface UsersService {
                                   Long tokenNumber,
                                   String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion;
 
-    void createTokensPerClient (Long clientId);
+    void createTokensPerClient (Long clientId) throws UserDoesNotExistException;
 
     Integer chooseRandomTokenForVerification();
 
