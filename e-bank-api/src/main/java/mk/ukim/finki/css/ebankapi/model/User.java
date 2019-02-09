@@ -29,6 +29,18 @@ public class User {
 
     }
 
+    public User(String username, String password, String name, String telephone, Double startBalance, String accoutNumber, String address) {
+        this.username = username;
+        this.password = password;
+        this.name = name;
+        this.telephone = telephone;
+        this.startBalance = startBalance;
+        this.accoutNumber = accoutNumber;
+        this.address = address;
+        balance = startBalance;
+        role=Role.CLIENT;
+    }
+
     public Long getId() {
         return id;
     }

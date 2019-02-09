@@ -10,5 +10,7 @@ public class EBankApiApplication {
 		SpringApplication.run(EBankApiApplication.class, args);
 	}
 
+
+
 }
 

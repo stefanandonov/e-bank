@@ -9,26 +9,61 @@ import java.util.*;
 
 public interface UsersService {
 
-    void addClient (String username, String password, String name,
-                    String telephone,  Double startBalance, String accountNumber, String addres) throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException, UserDoesNotExistException;
+    String addClient(String username, String name,
+                   String telephone, Double startBalance,
+                   String accountNumber, String address, Long employeeId,
+                   StringBuilder sb)
+            throws UsernameAlreadyExistException,
+            AccountNumberAlreadyExistsException,
+            AccountNumberNotValidException,
+            UserDoesNotExistException,
+            NotSufficientPermissionExpcetion,
+            UserNotLoggedInException;
 
+    User login (String username,
+                   String password)
+            throws UserDoesNotExistException,
+            WrongPasswordException;
 
-    boolean canLogin (String username, String password) throws UserDoesNotExistException, WrongPasswordException;
+    Long getUserId (String user) throws UserDoesNotExistException;
 
-    User changeClientPassword (String username, String newPassword) throws UserDoesNotExistException;
+    Long getUserIdByAccountNumber (String account) throws UserDoesNotExistException;
 
-    Transaction makeTransactions (Long senderId, Long recieverId, Long employeeId, Double amount,
+    void logout (Long id)
+            throws UserNotLoggedInException;
+    User changeClientPassword (String username,
+                               String newPassword)
+            throws UserDoesNotExistException,
+            UserNotLoggedInException;
+
+    Transaction makeTransactions (Long senderId,
+                                  Long recieverId,
+                                  Long employeeId,
+                                  Double amount,
                                   Integer tokenItemNumber,
                                   Long tokenNumber,
-                                  String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion;
+                                  String senderPassword)
+            throws UserDoesNotExistException,
+            NotSufficientPermissionExpcetion,
+            UserNotLoggedInException;
 
-    void createTokensPerClient (Long clientId) throws UserDoesNotExistException;
+    String createTokensPerClient (Long clientId,
+                                  StringBuilder sb)
+            throws UserDoesNotExistException;
 
     Integer chooseRandomTokenForVerification();
 
-    void twoFactorAuthentication (Long id, Integer itemNumber, Long tokenNumber, String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion;
+    void twoFactorAuthentication (Long id,
+                                  Integer itemNumber,
+                                  Long tokenNumber,
+                                  String senderPassword)
+            throws UserDoesNotExistException,
+            NotSufficientPermissionExpcetion,
+            UserNotLoggedInException;
 
-    List<TransactionDTO> getTransactionsByUser (Long id) throws UserDoesNotExistException;
+    List<TransactionDTO> getTransactionsByUser (Long id)
+            throws UserDoesNotExistException,
+            UserNotLoggedInException;
 
     List<User> getClients();
 

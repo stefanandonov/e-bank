@@ -6,9 +6,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller()
 public class APIResource {
 
-    @GetMapping(value = "/hello_controller")
+    @GetMapping(value = "/login")
     public String hello() {
         return "index";
     }
+
+
 
 }

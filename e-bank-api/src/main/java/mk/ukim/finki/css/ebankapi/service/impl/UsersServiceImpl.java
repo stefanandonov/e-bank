@@ -8,6 +8,7 @@ import mk.ukim.finki.css.ebankapi.repository.*;
 import mk.ukim.finki.css.ebankapi.service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -47,11 +48,18 @@ public class UsersServiceImpl implements UsersService {
 
         return true;
     }
+
+    private String generateRandomPassword ()  {
+        RandomValueStringGenerator randomValueStringGenerator = new RandomValueStringGenerator(10);
+        return randomValueStringGenerator.generate();
+    }
+
     @Override
-    public void addClient(String username, String password, String name,
+    public String addClient(String username, String name,
                           String telephone, Double startBalance,
-                          String accountNumber, String address)
-            throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException, UserDoesNotExistException {
+                          String accountNumber, String address, Long employeeId,
+                          StringBuilder sb)
+            throws UsernameAlreadyExistException, AccountNumberAlreadyExistsException, AccountNumberNotValidException, UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException {
         /*
         * Function that creates a client whenever a bank employee creates one. Recieves as arguments all the nessecary informations
         * for the client (username, password (plain text), name, telephone number, start balance, account number, home addres.
@@ -60,8 +68,15 @@ public class UsersServiceImpl implements UsersService {
         * If everything is okay, the method saves the new user in the database.
         * */
 
-        User u = usersRepository.findByUsername(username).orElse(null);
+        User employee = usersRepository.findById(employeeId).orElseThrow(() -> new NotSufficientPermissionExpcetion());
 
+        if (employee.role!=Role.EMPLOYEE)
+            throw new NotSufficientPermissionExpcetion();
+
+        isUserLoggedIn(employeeId);
+
+        User u = usersRepository.findByUsername(username).orElse(null);
+        sb.append("Username: ").append(username).append("\n");
         if (u!=null)
             throw new UsernameAlreadyExistException(username);
 
@@ -73,56 +88,56 @@ public class UsersServiceImpl implements UsersService {
         if (!checkValidityForAccountNumber(accountNumber))
             throw new AccountNumberNotValidException(accountNumber);
 
-        //String hashedPassword = BCryptPasswordEncoder.hashpw(password,SALT);
+        String password = generateRandomPassword();
+        sb.append("Password: ").append(password).append("\n");;
         String hashedPassword = bCryptPasswordEncoder.encode(password);
 
-        User newUser = new User();
-        newUser.setUsername(username);
-        newUser.setName(name);
-        newUser.setPassword(hashedPassword);
-        newUser.setAccoutNumber(accountNumber);
-        newUser.setTelephone(telephone);
-        newUser.setAddress(address);
-        newUser.setStartBalance(startBalance);
-
+        User newUser = new User(username,hashedPassword,name,telephone,startBalance,accountNumber,address);
         usersRepository.save(newUser);
 
         u = usersRepository.findByUsername(username).orElse(null);
-        createTokensPerClient(u.getId());
+        String report = createTokensPerClient(u.getId(),sb);
+        return report;
 
     }
 
     @Override
-    public boolean canLogin(String username, String password) throws UserDoesNotExistException, WrongPasswordException {
+    public User login(String username, String password) throws UserDoesNotExistException, WrongPasswordException {
 
         User client = usersRepository.findByUsername(username).orElseThrow(() -> new UserDoesNotExistException(username));
-
-        // Is user already logged in
-
-
-        //boolean correctPassword = BCrypt.checkpw(password,client.getPassword());
         boolean correctPassword = bCryptPasswordEncoder.matches(password,client.getPassword());
-
-
         if (!correctPassword)
             throw new WrongPasswordException();
-
         loggedInUsers.add(client.getId());
-
-        return true;
+        return client;
     }
 
     @Override
-    public User changeClientPassword(String username, String newPassword) throws UserDoesNotExistException {
+    public Long getUserId(String username) throws UserDoesNotExistException {
+        return usersRepository.findByUsername(username).orElseThrow(() -> new UserDoesNotExistException(username)).getId();
+    }
+
+    @Override
+    public Long getUserIdByAccountNumber(String account) throws UserDoesNotExistException {
+        return usersRepository.findByAccoutNumber(account).orElseThrow(()->new UserDoesNotExistException(account)).getId();
+    }
+
+    @Override
+    public void logout(Long id) throws UserNotLoggedInException {
+        isUserLoggedIn(id);
+        loggedInUsers.remove(id);
+    }
+
+    @Override
+    public User changeClientPassword(String username, String newPassword) throws UserDoesNotExistException, UserNotLoggedInException {
 
         User client = usersRepository.findByUsername(username).orElseThrow(() -> new UserDoesNotExistException(username));
+        isUserLoggedIn(client.getId());
 
-        //String hashedNewPassword = BCrypt.hashpw(newPassword,SALT);
         String hashedNewPassword = bCryptPasswordEncoder.encode(newPassword);
-
         client.setPassword(hashedNewPassword);
-
         return usersRepository.save(client);
+
     }
 
     @Override
@@ -133,22 +148,28 @@ public class UsersServiceImpl implements UsersService {
                                         Integer tokenItemNumber,
                                         Long tokenNumber,
                                         String senderPassword)
-            throws UserDoesNotExistException, NotSufficientPermissionExpcetion {
-        // TODO: 07.02.2019 Check if logged in
+            throws UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException {
+
         if (senderId==null || recieverId == null || amount == null)
             throw new IllegalArgumentException();
 
         User sender = usersRepository.findById(senderId).orElseThrow(() -> new UserDoesNotExistException(""));
         User reciever = usersRepository.findById(recieverId).orElseThrow(() -> new UserDoesNotExistException(""));
+        User employee = usersRepository.findById(employeeId).orElse(null);
 
         if (employeeId==null) { //Online transaction
-            //method for two-factor authentication of the sender!!
+
+           isUserLoggedIn(senderId);
+
             this.twoFactorAuthentication(senderId,tokenItemNumber,tokenNumber, senderPassword);
 
         }
         else { //Offline transaction
 
-            User employee = usersRepository.findById(employeeId).orElseThrow(() -> new UserDoesNotExistException(""));
+            if (employee==null)
+                throw new UserDoesNotExistException("");
+
+            isUserLoggedIn(senderId);
 
             if (employee.getRole()!= Role.EMPLOYEE)
                 throw new NotSufficientPermissionExpcetion();
@@ -159,32 +180,35 @@ public class UsersServiceImpl implements UsersService {
         reciever.setBalance(reciever.getBalance()+amount);
         usersRepository.save(sender);
         usersRepository.save(reciever);
-        return transactionsRepository.save(new Transaction(sender,reciever,null,amount,ZonedDateTime.now()));
+        return transactionsRepository.save(new Transaction(sender,reciever,employee,amount,ZonedDateTime.now()));
     }
 
-    private Long randLong(Long min, Long max) {
-        return (random.nextLong() % (max - min)) + min;
+    private Long randLong() {
+        return (random.nextLong() % ((Long) 99999999L - (Long) 10000000L)) + 10000000L;
     }
 
 
     private Long generateRandomNumber() {
 
-        return randLong(10000000l,99999999l);
+        return randLong();
 
     }
     @Override
-    public void createTokensPerClient(Long clientId) throws UserDoesNotExistException {
-
+    public String createTokensPerClient(Long clientId, StringBuilder sb) throws UserDoesNotExistException {
+        sb.append("Tokens: \n");
         User client = usersRepository.findById(clientId).orElseThrow(() -> new UserDoesNotExistException(""));
         List<Long> assignedTokens = new ArrayList<>();
         for (int i=1;i<=40;i++) {
             Long tokenNumber = generateRandomNumber();
 
-            if (assignedTokens.isEmpty())
+            if (assignedTokens.isEmpty()){
                 assignedTokens.add(tokenNumber);
+                sb.append(String.format("%d: %d\n", i+1, tokenNumber));
+            }
             else {
                 while(assignedTokens.contains(tokenNumber)) tokenNumber = generateRandomNumber();
                 assignedTokens.add(tokenNumber);
+                sb.append(String.format("%d: %d\n", i+1, tokenNumber));
             }
         }
 
@@ -192,6 +216,7 @@ public class UsersServiceImpl implements UsersService {
                 .map(tokenNumber -> new Token(assignedTokens.indexOf(tokenNumber)+1,tokenNumber,client))
                 .forEach(token -> tokensRepository.save(token));
 
+        return sb.toString();
     }
 
     @Override
@@ -200,7 +225,10 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public void twoFactorAuthentication(Long clientId, Integer itemNumber, Long tokenNumber, String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion {
+    public void twoFactorAuthentication(Long clientId, Integer itemNumber, Long tokenNumber, String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException {
+
+        isUserLoggedIn(clientId);
+
         List<Token> tokensPerClient = tokensRepository.findAllByUserId(clientId);
 
         if (tokensPerClient==null)
@@ -222,7 +250,7 @@ public class UsersServiceImpl implements UsersService {
         Double amount = t.amount;
         ZonedDateTime date = t.date;
 
-        if (t.sender.equals(clientId)) {
+        if (t.sender.getId().equals(clientId)) {
             senderOrReciever = usersRepository
                     .findById(t.reciever.getId())
                     .orElse(null)
@@ -242,8 +270,9 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public List<TransactionDTO> getTransactionsByUser(Long clientId) throws UserDoesNotExistException {
+    public List<TransactionDTO> getTransactionsByUser(Long clientId) throws UserDoesNotExistException, UserNotLoggedInException {
 
+        isUserLoggedIn(clientId);
 
         List<Transaction> transactions = transactionsRepository.findAllByRecieverOrSender(clientId,clientId);
 
@@ -269,10 +298,9 @@ public class UsersServiceImpl implements UsersService {
 
     }
 
-    private boolean isUserAlreadyLoggedIn(Long id) {
-        if(this.loggedInUsers.contains(id)) {
-            return true;
+    private void isUserLoggedIn(Long id) throws UserNotLoggedInException {
+        if(!this.loggedInUsers.contains(id)) {
+            throw new UserNotLoggedInException();
         }
-        return false;
     }
 }
