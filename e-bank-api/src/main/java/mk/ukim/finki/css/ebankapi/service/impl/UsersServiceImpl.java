@@ -37,6 +37,7 @@ public class UsersServiceImpl implements UsersService {
         this.transactionsRepository = transactionsRepository;
         this.usersRepository = usersRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+
     }
 
     private static boolean checkValidityForAccountNumber (String accountNumber) {
@@ -104,6 +105,12 @@ public class UsersServiceImpl implements UsersService {
     @Override
     public User login(String username, String password) throws UserDoesNotExistException, WrongPasswordException {
 
+        /*User user = new User ();
+        user.setRole(Role.EMPLOYEE);
+        user.setUsername("stefan5andonov");
+        user.setPassword(bCryptPasswordEncoder.encode("admin"));
+        usersRepository.save(user);*/
+
         User client = usersRepository.findByUsername(username).orElseThrow(() -> new UserDoesNotExistException(username));
         boolean correctPassword = bCryptPasswordEncoder.matches(password,client.getPassword());
         if (!correctPassword)
@@ -148,14 +155,14 @@ public class UsersServiceImpl implements UsersService {
                                         Integer tokenItemNumber,
                                         Long tokenNumber,
                                         String senderPassword)
-            throws UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException {
+            throws UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException, TokenDoesNotExistException {
 
         if (senderId==null || recieverId == null || amount == null)
             throw new IllegalArgumentException();
 
         User sender = usersRepository.findById(senderId).orElseThrow(() -> new UserDoesNotExistException(""));
         User reciever = usersRepository.findById(recieverId).orElseThrow(() -> new UserDoesNotExistException(""));
-        User employee = usersRepository.findById(employeeId).orElse(null);
+        User employee = null;
 
         if (employeeId==null) { //Online transaction
 
@@ -169,8 +176,8 @@ public class UsersServiceImpl implements UsersService {
             if (employee==null)
                 throw new UserDoesNotExistException("");
 
-            isUserLoggedIn(senderId);
-
+            isUserLoggedIn(employeeId);
+            employee = usersRepository.findById(employeeId).orElse(null);
             if (employee.getRole()!= Role.EMPLOYEE)
                 throw new NotSufficientPermissionExpcetion();
 
@@ -184,7 +191,8 @@ public class UsersServiceImpl implements UsersService {
     }
 
     private Long randLong() {
-        return (random.nextLong() % ((Long) 99999999L - (Long) 10000000L)) + 10000000L;
+        Long aLong =  (Long.valueOf(random.nextInt((999999 - 100000) + 1) + 1000000));
+        return aLong;
     }
 
 
@@ -203,12 +211,12 @@ public class UsersServiceImpl implements UsersService {
 
             if (assignedTokens.isEmpty()){
                 assignedTokens.add(tokenNumber);
-                sb.append(String.format("%d: %d\n", i+1, tokenNumber));
+                sb.append(String.format("%d: %d\n", i, tokenNumber));
             }
             else {
                 while(assignedTokens.contains(tokenNumber)) tokenNumber = generateRandomNumber();
                 assignedTokens.add(tokenNumber);
-                sb.append(String.format("%d: %d\n", i+1, tokenNumber));
+                sb.append(String.format("%d: %d\n", i, tokenNumber));
             }
         }
 
@@ -220,12 +228,17 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public Integer chooseRandomTokenForVerification() {
-        return random.nextInt(40)+1;
+    public Integer chooseRandomTokenForVerification(Long clientId) {
+
+        List<Token> tokens = tokensRepository.findAllByUserId(clientId);
+
+        int randomPick = random.nextInt(tokens.size());
+
+        return tokens.get(randomPick).itemNumber;
     }
 
     @Override
-    public void twoFactorAuthentication(Long clientId, Integer itemNumber, Long tokenNumber, String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException {
+    public void twoFactorAuthentication(Long clientId, Integer itemNumber, Long tokenNumber, String senderPassword) throws UserDoesNotExistException, NotSufficientPermissionExpcetion, UserNotLoggedInException, TokenDoesNotExistException {
 
         isUserLoggedIn(clientId);
 
@@ -233,13 +246,19 @@ public class UsersServiceImpl implements UsersService {
 
         if (tokensPerClient==null)
             throw new UserDoesNotExistException("");
-
-        if (!tokenNumber.equals(tokensPerClient.get(itemNumber + 1).tokenNumber))
+        System.out.println(itemNumber.toString() + " "
+                + tokenNumber.toString() + " " + (itemNumber-1) + " " + tokensPerClient.get(itemNumber - 1).tokenNumber);
+        if (!tokenNumber.equals(tokensPerClient.get(itemNumber - 1).tokenNumber))
             throw new NotSufficientPermissionExpcetion();
 
         User user = usersRepository.findById(clientId).orElseThrow(() -> new UserDoesNotExistException(""));
         if (!bCryptPasswordEncoder.matches(senderPassword,user.getPassword()))
             throw new NotSufficientPermissionExpcetion();
+
+        Token tokenToDelete = tokensRepository.findByUserIdAndItemNumber(clientId,itemNumber-1)
+                .orElseThrow(() -> new TokenDoesNotExistException());
+
+        tokensRepository.delete(tokenToDelete);
 
 
     }
@@ -274,7 +293,10 @@ public class UsersServiceImpl implements UsersService {
 
         isUserLoggedIn(clientId);
 
-        List<Transaction> transactions = transactionsRepository.findAllByRecieverOrSender(clientId,clientId);
+        User user = usersRepository.findById(clientId)
+                .orElseThrow(()-> new UserDoesNotExistException(clientId.toString()));
+
+        List<Transaction> transactions = transactionsRepository.findAllByRecieverOrSender(user,user);
 
 
         List<TransactionDTO> list = new ArrayList<>();
@@ -298,8 +320,17 @@ public class UsersServiceImpl implements UsersService {
 
     }
 
+    @Override
+    public Double balance(String username) throws UserDoesNotExistException {
+        return  usersRepository.findByUsername(username)
+                .orElseThrow(()->new UserDoesNotExistException(username))
+                .balance;
+    }
+
     private void isUserLoggedIn(Long id) throws UserNotLoggedInException {
         if(!this.loggedInUsers.contains(id)) {
+            System.out.println(this.loggedInUsers.toString() + " "+ id +" " +
+                    usersRepository.findById(id).orElse(null).getUsername());
             throw new UserNotLoggedInException();
         }
     }

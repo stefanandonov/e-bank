@@ -4,9 +4,9 @@ import java.time.ZonedDateTime;
 
 public class TransactionDTO {
 
-    private ZonedDateTime date;
-    private String senderOrRecieverName;
-    private Double amount;
+    public ZonedDateTime date;
+    public String senderOrRecieverName;
+    public Double amount;
 
     public TransactionDTO(ZonedDateTime date, String senderOrRecieverName, Double amount) {
         this.date = date;

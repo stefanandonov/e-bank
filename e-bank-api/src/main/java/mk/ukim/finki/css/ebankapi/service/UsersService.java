@@ -45,13 +45,13 @@ public interface UsersService {
                                   String senderPassword)
             throws UserDoesNotExistException,
             NotSufficientPermissionExpcetion,
-            UserNotLoggedInException;
+            UserNotLoggedInException, TokenDoesNotExistException;
 
     String createTokensPerClient (Long clientId,
                                   StringBuilder sb)
             throws UserDoesNotExistException;
 
-    Integer chooseRandomTokenForVerification();
+    Integer chooseRandomTokenForVerification(Long clientId);
 
     void twoFactorAuthentication (Long id,
                                   Integer itemNumber,
@@ -59,12 +59,15 @@ public interface UsersService {
                                   String senderPassword)
             throws UserDoesNotExistException,
             NotSufficientPermissionExpcetion,
-            UserNotLoggedInException;
+            UserNotLoggedInException, TokenDoesNotExistException;
 
     List<TransactionDTO> getTransactionsByUser (Long id)
             throws UserDoesNotExistException,
             UserNotLoggedInException;
 
     List<User> getClients();
+
+
+    Double balance (String username) throws UserDoesNotExistException;
 
 }

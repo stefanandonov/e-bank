@@ -7,6 +7,7 @@ import java.time.ZonedDateTime;
 @Table(name = "transacations")
 public class Transaction {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     public Double amount;
     public ZonedDateTime date;

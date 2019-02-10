@@ -9,7 +9,7 @@ import javax.persistence.*;
 @Table(name = "tokens")
 public class Token {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     public Integer itemNumber;
     @Column(unique = true)

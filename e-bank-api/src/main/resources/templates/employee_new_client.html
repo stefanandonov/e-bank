@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Внесување на нов клиент во системот</title>
+</head>
+<body>
+<H1>
+    Внесување на нов клиент во системот
+</H1>
+
+<form action="/employeeHome/new_user" method="post">
+    Назив на клиентот <br>
+    <input type="text" name="name" required> <br>
+    Username <br>
+    <input type="text" name="username" required> <br>
+    Број на сметка <br>
+    <input type="text" name="accountNumber" required> <br>
+    Адреса <br>
+    <input type="text" name="address" required> <br>
+    Телефонски број <br>
+    <input type="text" name="telephone" required> <br>
+    Почетена состојба на сметката: <br>
+    <input type="number" name="balance" required> <br>
+    Внеси клиент <br>
+    <input type="submit" value="Внеси">
+
+</form>
+</body>
+</html>

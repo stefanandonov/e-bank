@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Нова трансакција</title>
+</head>
+<body>
+<h1>
+    Креирање на нова трансакција
+</h1>
+
+<form action="/employeeHome/new_transaction" method="post">
+    Сметка на налогодавач: <br>
+    <input type="text" name="senderAccountNumber" required>
+    Сметка на примач: <br>
+    <input type="text" name="receiverAccountNumber" required> <br>
+    Износ: <br>
+    <input type="number" name="amount" required> <br>
+    <input type="submit" value="Изврши трансакција" required> <br>
+
+</form>
+
+</body>
+</html>

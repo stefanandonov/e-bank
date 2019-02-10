@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Почетна страна на клиент</title>
+</head>
+<body>
+
+<h1>
+    Почетна страна на клиент
+</h1>
+
+<h2 th:text="${username}"></h2>
+
+<form action="/clientHome/changePassword" method="get">
+
+    <input type="submit" value="Промена на лозинка">
+</form>
+
+<form action="/clientHome/new_transaction" method="get">
+
+    <input type="submit" value="Нова трансакција">
+</form>
+
+<form action="/clientHome/transactions" method="get">
+    <input type="submit" value="Извештај за трансакции">
+</form>
+
+
+<br>
+<br>
+<br>
+
+<form action="/clientHome/logout" method="get">
+    <input type="submit" value="Одјави се">
+</form>
+
+
+</body>
+</html>

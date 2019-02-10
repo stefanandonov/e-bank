@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Нова трансакција</title>
+</head>
+<body>
+
+<h1>
+    Направи нова трансакција:
+</h1>
+<h3> Корисник: <span th:text="${username}"></span></h3>
+
+<form action="/clientHome/new_transaction" method="post" >
+    Сметка на примач: <br>
+    <input type="text" name="recieverAccountNumber" required> <br>
+    Износ <br>
+    <input type="number" name="amount" required> <br>
+    Повторно внесете ја лозинката: <br>
+    <input type="password" name="password" required> <br>
+    <span th:text="${tokenItemNumber}"></span>-иот токен <br>
+    Реден број на токенот <br>
+    <input type="number" name="itemNumber" required> <br>
+    <input type="number" name="tokenNumber" required> <br>
+    <input type="submit" value="Изврши">
+</form>
+
+</body>
+</html>

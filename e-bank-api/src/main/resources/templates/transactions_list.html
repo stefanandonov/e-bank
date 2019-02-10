@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Извештај за состојба</title>
+</head>
+<body>
+
+<h1>
+    Извештај за состојба и извршени трансакции за клиент:
+</h1>
+
+<h3 th:text="${username}"></h3>
+
+<h4>Моментално салдо: <span th:text="${balance}"></span></h4>
+
+<table>
+    <th>
+    <td>Испраќач/Примач</td>
+    <td>Износ</td>
+    <td>Датум</td>
+    </th>
+    <tr th:each="transaction: ${transactions}">
+        <td th:text="${transaction.senderOrRecieverName}" />
+        <td th:text="${transaction.amount}" />
+        <td th:text="${transaction.date}" />
+    </tr>
+</table>
+
+
+<br>
+<br>
+<br>
+<br>
+
+<form action="/clientHome" method="get">
+    <input type="submit" value="Назад">
+</form>
+
+</body>
+</html>
