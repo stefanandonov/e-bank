@@ -256,10 +256,10 @@ public class UsersServiceImpl implements UsersService {
         if (!bCryptPasswordEncoder.matches(senderPassword,user.getPassword()))
             throw new NotSufficientPermissionExpcetion();
 
-        Token tokenToDelete = tokensRepository.findByUserIdAndItemNumber(clientId,itemNumber-1)
+       /* Token tokenToDelete = tokensRepository.findByUserIdAndItemNumber(clientId,itemNumber-1)
                 .orElseThrow(() -> new TokenDoesNotExistException());
 
-        tokensRepository.delete(tokenToDelete);
+        tokensRepository.delete(tokenToDelete);*/
 
 
     }
