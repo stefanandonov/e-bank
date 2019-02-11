@@ -37,7 +37,7 @@ public class EmployeeResource {
                              @SessionAttribute String employeeUsername,
                              HttpServletRequest request) {
         model.addAttribute("employee_name", employeeUsername);
-        request.getSession().setAttribute("result","");
+        request.getSession().setAttribute("result",null);
         return "employee_home.html";
     }
 

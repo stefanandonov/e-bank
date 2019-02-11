@@ -172,14 +172,15 @@ public class UsersServiceImpl implements UsersService {
 
         }
         else { //Offline transaction
-
+            employee = usersRepository.findById(employeeId).orElse(null);
             if (employee==null)
                 throw new UserDoesNotExistException("");
 
             isUserLoggedIn(employeeId);
-            employee = usersRepository.findById(employeeId).orElse(null);
-            if (employee.getRole()!= Role.EMPLOYEE)
+
+            if (employee.getRole()!= Role.EMPLOYEE) {
                 throw new NotSufficientPermissionExpcetion();
+            }
 
         }
 
